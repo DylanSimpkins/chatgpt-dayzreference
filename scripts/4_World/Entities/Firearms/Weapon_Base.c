@@ -53,6 +53,7 @@ class Weapon_Base extends Weapon
 	protected bool m_ButtstockAttached;
 	protected bool m_Charged = false;
 	protected bool m_WeaponOpen = false;
+	protected bool m_WasIronSight;
 	protected int m_BurstCount;
 	protected int m_BayonetAttachmentIdx;
 	protected int m_ButtstockAttachmentIdx;
@@ -73,11 +74,13 @@ class Weapon_Base extends Weapon
 	protected PhxInteractionLayers hit_mask = PhxInteractionLayers.CHARACTER | PhxInteractionLayers.BUILDING | PhxInteractionLayers.DOOR | PhxInteractionLayers.VEHICLE | PhxInteractionLayers.ROADWAY | PhxInteractionLayers.TERRAIN | PhxInteractionLayers.ITEM_SMALL | PhxInteractionLayers.ITEM_LARGE | PhxInteractionLayers.FENCE | PhxInteractionLayers.AI;
 	protected ref Timer m_DelayedValidationTimer;
 	private float m_coolDownTime = 0;
+	
 	void Weapon_Base()
 	{
 		//m_DmgPerShot		= ConfigGetFloat("damagePerShot");
 		m_BayonetAttached 	= false;
 		m_ButtstockAttached = false;
+		m_WasIronSight = true;	// initially uses ironsights by default
 		m_BayonetAttachmentIdx = -1;
 		m_ButtstockAttachmentIdx = -1;
 		m_BurstCount = 0;
@@ -294,7 +297,7 @@ class Weapon_Base extends Weapon
 		// @NOTE: synchronous events not handled by fsm
 		if (e.GetEventID() == WeaponEventID.SET_NEXT_MUZZLE_MODE)
 		{
-			SetNextMuzzleMode(GetCurrentMuzzle());
+			SetNextWeaponMode(GetCurrentMuzzle());
 			return true;
 		}
 
@@ -1065,7 +1068,16 @@ class Weapon_Base extends Weapon
 	{
 		m_PropertyModifierObject = null;
 
-		ValidateAndRepair();
+		if (GetGame().IsServer())
+		{
+		    // The server knows about all of its attachments
+		    ValidateAndRepair();
+		}
+		else
+		{
+		    // The client doesn't know it has attachments yet... give it a moment
+		    DelayedValidateAndRepair();
+		}
 		
 		super.OnInventoryEnter(player);
 	}
@@ -1110,6 +1122,29 @@ class Weapon_Base extends Weapon
 	
 	override void OnItemLocationChanged(EntityAI old_owner, EntityAI new_owner)
 	{
+		/*
+		// TODO(kumarjac):	Solve this in code instead, OnItemLocationChanged is called too late. 
+		//					Maybe extend an option for items to specify what attachments they must
+		//					be synchronized with? Moving to 'DelayedValidateAndRepair' works for now.
+		int muzzles = GetMuzzleCount();
+		for (int muzzleIdx = 0; muzzleIdx < muzzles; muzzleIdx++)
+		{
+			Magazine mag = GetMagazine(muzzleIdx);
+			Print(mag);
+			if (!mag)
+				continue;
+				
+			Print(mag.GetInventory());
+			if (!mag.GetInventory())
+				continue;
+				
+			InventoryLocation invLoc = new InventoryLocation();
+			mag.GetInventory().GetCurrentInventoryLocation(invLoc);
+				
+			GetGame().AddInventoryJunctureEx(null, this, invLoc, true, 1000);
+		}
+		*/
+			
 		super.OnItemLocationChanged(old_owner,new_owner);
 		
 		// "resets" optics memory on optics
@@ -1125,6 +1160,9 @@ class Weapon_Base extends Weapon
 				player.SwitchOptics(optics,false);
 			}
 		}
+		
+		if (old_owner != new_owner && PlayerBase.Cast(new_owner))
+			SetWasIronSight(true);	// reset ironsight/optic default
 
 		HideWeaponBarrel(false);
 	}
@@ -1279,6 +1317,17 @@ class Weapon_Base extends Weapon
 	ref array<float> GetWeaponDOF()
 	{
 		return m_DOFProperties;
+	}
+	
+	bool GetWasIronSight()
+	{
+		return m_WasIronSight;
+	}
+	
+	// used to remember last used ironsight/optic state
+	void SetWasIronSight(bool state)
+	{
+		m_WasIronSight = state;
 	}
 	
 	// lifting weapon on obstcles
@@ -1897,6 +1946,11 @@ class Weapon_Base extends Weapon
 		{
 			GetGame().ClearJuncture(player, mag);
 		}
+	}
+	
+	void SetNextWeaponMode(int muzzleIndex)
+	{
+		SetNextMuzzleMode(muzzleIndex);
 	}
 	
 	// CoolDown

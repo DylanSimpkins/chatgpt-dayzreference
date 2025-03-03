@@ -127,6 +127,7 @@ class ScriptInputUserData : ParamsWriteContext
 
 	proto native bool CopyFrom(ParamsReadContext other);
 
+	//! Returns true when the channel is free, AND the InputBuffer is NOT full (same as '!IsNetworkInputBufferFull()')
 	proto native static bool CanStoreInputUserData ();
 };
 
@@ -458,6 +459,8 @@ typedef Param1<int> MPConnectionLostEventParams;
 typedef Param2<int, string> MPConnectionCloseEventParams;
 //! Player, "Killer" (Beware: Not necessarily actually the killer, Client doesn't have this info)
 typedef Param2<DayZPlayer, Object> PlayerDeathEventParams;
+//! isFull
+typedef Param1<bool> NetworkInputBufferEventParams;
 
 
 //-----------------------------------------------------------------------------
@@ -566,6 +569,8 @@ const EventType	ConnectingStartEventTypeID;
 const EventType	ConnectingAbortEventTypeID;
 //! params: \ref PlayerDeathEventParams
 const EventType	PlayerDeathEventTypeID;
+//! params: \ref NetworkInputBufferEventParams
+const EventType	NetworkInputBufferEventTypeID;
 	
 //possible in engine events not accessable from script
 //ReloadShadersEvent
@@ -668,6 +673,7 @@ class Hud : Managed
 	void ShowHud(bool show);
 	
 	void OnResizeScreen();
+	void OnPlayerLoaded();	// player connects or respawns
 
 	void SetPermanentCrossHair(bool show) {}
 	

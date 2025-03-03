@@ -1,34 +1,34 @@
 class CASingleUseQuantityEdible : CASingleUseQuantity
 {
-	void CASingleUseQuantityEdible( float quantity_used_per_action )
+	void CASingleUseQuantityEdible(float quantity_used_per_action)
 	{
 		m_QuantityUsedPerAction = quantity_used_per_action;
 	}
 	
-	override void CalcAndSetQuantity(ActionData action_data )
-	{	
-		if ( m_SpentUnits )
+	override void CalcAndSetQuantity(ActionData action_data)
+	{
+		super.CalcAndSetQuantity(action_data);
+		
+		PlayerConsumeData consumeData = new PlayerConsumeData();
+		consumeData.m_Type = EConsumeType.ITEM_CONTINUOUS;
+		consumeData.m_Amount = m_QuantityUsedPerAction;
+		consumeData.m_Source = action_data.m_MainItem;
+
+		consumeData.m_Agents = 0;
+		Edible_Base edibleItem;
+		if (Edible_Base.CastTo(edibleItem, action_data.m_MainItem))
 		{
-			m_SpentUnits.param1 = m_QuantityUsedPerAction;
-			SetACData(m_SpentUnits);	
+			if ((edibleItem.GetConsumptionPenaltyContext() & EConsumptionPenaltyContext.DRINK|EConsumptionPenaltyContext.EAT) != EConsumptionPenaltyContext.NONE)
+				consumeData.m_Agents = action_data.m_Player.GetBloodyHandsPenaltyAgents();
 		}
 		
-		PlayerBase ntarget = PlayerBase.Cast( action_data.m_Target.GetObject() );
-		if ( ntarget )
+		if (GetGame().IsServer())
 		{
-			if ( GetGame().IsServer() ) 
-			{
-				//action_data.m_MainItem.Consume(ntarget, m_QuantityUsedPerAction);
-				ntarget.Consume(action_data.m_MainItem, m_QuantityUsedPerAction, EConsumeType.ITEM_SINGLE_TIME);
-			}
-		}
-		else
-		{
-			if ( GetGame().IsServer() ) 
-			{
-				//action_data.m_MainItem.Consume(action_data.m_Player, m_QuantityUsedPerAction);
-				action_data.m_Player.Consume(action_data.m_MainItem, m_QuantityUsedPerAction, EConsumeType.ITEM_SINGLE_TIME);
-			}
+			PlayerBase ntarget = PlayerBase.Cast(action_data.m_Target.GetObject());
+			if (ntarget)
+				ntarget.Consume(consumeData);
+			else
+				action_data.m_Player.Consume(consumeData);
 		}
 	}
-};
+}

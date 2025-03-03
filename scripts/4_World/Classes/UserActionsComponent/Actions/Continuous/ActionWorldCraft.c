@@ -65,9 +65,9 @@ class ActionWorldCraft: ActionContinuousBase
 		PlayerBase player;
 		if( Class.CastTo(player, GetGame().GetPlayer()) )
 		{
-			PluginRecipesManager module_recipes_manager;
-			Class.CastTo(module_recipes_manager,  GetPlugin(PluginRecipesManager) );
-			return module_recipes_manager.GetRecipeName( player.GetCraftingManager().GetRecipeID(m_VariantID) );
+			PluginRecipesManager moduleRecipesManager;
+			Class.CastTo(moduleRecipesManager,  GetPlugin(PluginRecipesManager) );
+			return moduleRecipesManager.GetRecipeName( player.GetCraftingManager().GetRecipeID(m_VariantID) );
 		}
 
 		return "Default worldcraft text";
@@ -75,18 +75,36 @@ class ActionWorldCraft: ActionContinuousBase
 	
 	override bool ActionCondition( PlayerBase player, ActionTarget target, ItemBase item )
 	{
-		//Client
-		if ( !GetGame().IsDedicatedServer() )
+		if (GetGame().IsServer())
 		{					
-			return true;
-		}
-		else //Server
-		{
-			if ( !target.GetObject() || !item )
+			if (!target.GetObject() || !item)
 				return false;
 		}
 		
-		return true;		
+		return true;
+	}
+	
+	override bool ActionConditionContinue(ActionData action_data)
+	{
+		if (GetGame().IsServer())
+		{					
+			if (!action_data.m_Target.GetObject() || !action_data.m_MainItem)
+				return false;
+			
+			PluginRecipesManager moduleRecipesManager;
+			Class.CastTo(moduleRecipesManager,  GetPlugin(PluginRecipesManager) );
+			
+			WorldCraftActionData action_data_wc = WorldCraftActionData.Cast(action_data);
+			
+			ItemBase item2;
+			Class.CastTo(item2, action_data_wc.m_Target.GetObject());
+			if(!moduleRecipesManager.IsRecipePossibleToPerform(action_data_wc.m_RecipeID, action_data.m_MainItem, item2, action_data.m_Player))
+			{
+				return false;
+			}
+		}
+		
+		return true;
 	}
 	
 	override string GetSoundCategory(ActionData action_data)
@@ -114,6 +132,8 @@ class ActionWorldCraft: ActionContinuousBase
 
 			PluginRecipesManager moduleRecipesManager;
 			Class.CastTo(moduleRecipesManager, GetPlugin(PluginRecipesManager));
+			moduleRecipesManager.IsRecipePossibleToPerform(action_data_wc.m_RecipeID, action_data_wc.m_MainItem, ItemBase.Cast(action_data_wc.m_Target.GetObject()), player); // sorts items server side, needed for anim selection
+			
 			m_CommandUID = moduleRecipesManager.GetAnimationCommandUID(action_data_wc.m_RecipeID);
 			
 			return true;
@@ -151,15 +171,20 @@ class ActionWorldCraft: ActionContinuousBase
 		
 		if (action_data.m_MainItem && item2)
 		{
-			ClearActionJuncture(action_data);
+			if (GetGame().IsMultiplayer())
+				ClearActionJuncture(action_data);
+			else
+				ClearInventoryReservationEx(action_data);
+			
 			module_recipes_manager.PerformRecipeServer(action_data_wc.m_RecipeID, action_data.m_MainItem, item2, action_data.m_Player);
+			
+			if (GetGame().IsMultiplayer())
+				AddActionJuncture(action_data);
+			else
+				InventoryReservation(action_data);
 		}
 	}
-	
-	override void OnFinishProgressClient( ActionData action_data )
-	{
-	}
-	
+		
 	override void WriteToContext(ParamsWriteContext ctx, ActionData action_data)
 	{
 		super.WriteToContext(ctx, action_data);

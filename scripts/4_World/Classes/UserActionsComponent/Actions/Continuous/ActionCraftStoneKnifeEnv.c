@@ -45,9 +45,7 @@ class ActionCraftStoneKnifeEnv: ActionContinuousBase
 	override void OnFinishProgressServer( ActionData action_data )
 	{	
 		EntityAI item_ingredient = action_data.m_MainItem;
-		EntityAI knife;
-		
-		knife = action_data.m_Player.SpawnEntityOnGroundPos("StoneKnife", action_data.m_Player.GetPosition());
+		EntityAI knife = action_data.m_Player.SpawnEntityOnGroundRaycastDispersed("StoneKnife");
 		action_data.m_MainItem.Delete();
 		
 		MiscGameplayFunctions.TransferItemProperties(item_ingredient, knife);

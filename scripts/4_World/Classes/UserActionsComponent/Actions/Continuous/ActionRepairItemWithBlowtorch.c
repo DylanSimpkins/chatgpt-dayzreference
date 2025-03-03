@@ -2,7 +2,7 @@ class ActionRepairItemWithBlowtorchCB : ActionContinuousBaseCB
 {
 	override void CreateActionComponent()
 	{
-		m_ActionData.m_ActionComponent = new CAContinuousTime(UATimeSpent.BASEBUILDING_REPAIR_MEDIUM);
+		m_ActionData.m_ActionComponent = new CAContinuousRepeat(UATimeSpent.BASEBUILDING_REPAIR_MEDIUM);
 	}
 }
 
@@ -53,8 +53,6 @@ class ActionRepairItemWithBlowtorch : ActionContinuousBase
 			Class.CastTo(moduleRepairing, GetPlugin(PluginRepairing));
 			moduleRepairing.Repair(action_data.m_Player, action_data.m_MainItem, targetItem, m_SpecialtyWeight);
 		}
-		
-		action_data.m_MainItem.GetCompEM().SwitchOff();
 	}
 	
 	override void OnEndServer(ActionData action_data)
