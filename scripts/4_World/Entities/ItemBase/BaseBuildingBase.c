@@ -38,7 +38,7 @@ class BaseBuildingBase extends ItemBase
 	// Constructor
 	void BaseBuildingBase() 
 	{
-		m_DamageTriggers = new ref map<string, ref AreaDamageManager>;
+		m_DamageTriggers = new map<string, ref AreaDamageManager>;
 		
 		//synchronized variables
 		RegisterNetSyncVariableInt( "m_SyncParts01" );
@@ -89,6 +89,30 @@ class BaseBuildingBase extends ItemBase
 	override int GetHideIconMask()
 	{
 		return EInventoryIconVisibility.HIDE_VICINITY;
+	}
+	
+	override void InitItemSounds()
+	{
+		super.InitItemSounds();
+
+		ItemSoundHandler handler = GetItemSoundHandler();
+		SoundParameters params = new SoundParameters();
+		params.m_Loop = true;
+
+		if (GetFoldSoundset() != string.Empty)
+			handler.AddSound(SoundConstants.ITEM_FOLD, GetFoldSoundset());
+		if (GetLoopFoldSoundset() != string.Empty)
+			handler.AddSound(SoundConstants.ITEM_FOLD_LOOP, GetLoopFoldSoundset(), params);
+	}
+	
+	override string GetFoldSoundset()
+	{
+		return "putDown_FenceKit_SoundSet";
+	}
+	
+	override string GetLoopFoldSoundset()
+	{
+		return "Shelter_Site_Build_Loop_SoundSet";
 	}
 
 	// --- SYNCHRONIZATION
@@ -631,9 +655,6 @@ class BaseBuildingBase extends ItemBase
 			//Destroy construction
 			GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(DestroyConstruction, 200, false, this);
 		}
-		
-		if (GetGame().IsServer())
-			HandleItemFalling(construtionPart);
 	}
 	
 	void OnPartDismantledClient( string part_name, int action_id )
@@ -674,9 +695,6 @@ class BaseBuildingBase extends ItemBase
 			//Destroy construction
 			GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(DestroyConstruction, 200, false, this);
 		}
-		
-		if (GetGame().IsServer())
-			HandleItemFalling(construtionPart);
 	}
 	
 	void OnPartDestroyedClient( string part_name, int action_id )
@@ -685,6 +703,7 @@ class BaseBuildingBase extends ItemBase
 		SoundDestroyStart( part_name );
 	}
 	
+	//! Disconnected temporarily
 	protected void HandleItemFalling(ConstructionPart part)
 	{
 		bool process = false;
@@ -723,6 +742,7 @@ class BaseBuildingBase extends ItemBase
 		}
 	}
 	
+	//! Disconnected temporarily
 	protected void ItemFall(vector min, vector max)
 	{
 		array<EntityAI> foundEntities = new array<EntityAI>();

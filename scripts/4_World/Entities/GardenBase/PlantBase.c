@@ -41,7 +41,7 @@ class PlantBase extends ItemBase
 	
 	private PluginHorticulture m_ModuleHorticulture;
 	
-	private const float SPOIL_AFTER_MATURITY_TIME = 14400; //The time it takes for a fully grown plant to spoil, in seconds
+	private const float SPOIL_AFTER_MATURITY_TIME = 14400.0; //The time it takes for a fully grown plant to spoil, in seconds (4 hours)
 	private const int TICK_FREQUENCY = 1; // seconds
 	
 	// debug
@@ -93,7 +93,7 @@ class PlantBase extends ItemBase
 		if (m_TimeTicker)
 			m_TimeTicker.Stop();
 		
-		if (!m_MarkForDeletion)
+		if (!m_MarkForDeletion && !IsPendingDeletion())
 		{
 			DestroyPlant();
 		}
@@ -182,7 +182,8 @@ class PlantBase extends ItemBase
 		GardenBase garden = GardenBase.Cast( GetHierarchyParent() );
 
 		int slot_index = -1;
-		ctx.Read( slot_index );
+		if (!ctx.Read(slot_index))
+			return false;
 		
 		Slot slot = garden.GetSlotByIndex(slot_index);
 
@@ -211,8 +212,8 @@ class PlantBase extends ItemBase
 		}
 		else
 		{
+			ErrorEx("[Warning] A plant existed without a garden. Therefore it was deleted from the world to prevent issues! Position: " + GetPosition(), ErrorExSeverity.INFO);
 			GetGame().ObjectDelete(this); // Plants that exist without a garden must be deleted. Otherwise they might cause problems.
-			Print("Warning! A plant existed without a garden. Therefore it was deleted from the world to prevent issues!");
 		}
 	}
 	
@@ -220,120 +221,69 @@ class PlantBase extends ItemBase
 	{
 		return m_CropsType;
 	}
-	
-	
-	bool OnStoreLoadCustom( ParamsReadContext ctx, int version )
+
+	bool OnStoreLoadCustom(ParamsReadContext ctx, int version)
 	{
-		int loadInt;
-		if ( !ctx.Read( loadInt ) )
-			loadInt = 0;
-		
-		m_SprayUsage = loadInt;
-		
-		loadInt = 0;
-		if ( !ctx.Read( loadInt ) )
-			loadInt = 5;
-		
-		m_DeleteDryPlantTime = loadInt;
-		
-		loadInt = 0;
-		if ( !ctx.Read( loadInt ) )
-			 loadInt = 5;
-		m_SpoiledRemoveTime = loadInt;
-		
-		loadInt = 0;
-		if ( !ctx.Read( loadInt ) )
-			loadInt = 300;
-		m_FullMaturityTime = loadInt;
-		
-		loadInt = 0;
-		if ( !ctx.Read( loadInt ) )
-			loadInt = 300;
-		m_SpoilAfterFullMaturityTime = loadInt;
-		
-		loadInt = 0;
-		if ( !ctx.Read( loadInt ) )
+		if (!ctx.Read(m_SprayUsage))
 			return false;
-		m_StateChangeTime = loadInt;
+			
+		if (!ctx.Read(m_DeleteDryPlantTime))
+			return false;
+			
+		if (!ctx.Read(m_SpoiledRemoveTime))
+			return false;
+			
+		if (!ctx.Read(m_FullMaturityTime))
+			return false;
+			
+		if (!ctx.Read(m_SpoilAfterFullMaturityTime))
+			return false;
+			
+		if (!ctx.Read(m_StateChangeTime))
+			return false;
+			
+		if (!ctx.Read(m_InfestationChance))
+			return false;
+			
+		if (!ctx.Read(m_GrowthStagesCount))
+			return false;
+			
+		if (!ctx.Read(m_CropsCount))
+			return false;
+			
+		if (!ctx.Read(m_CropsType))
+			return false;
+			
+		if (!ctx.Read(m_PlantMaterialMultiplier))
+			return false;
+			
+		if (!ctx.Read(m_PlantState))
+			return false;
+			
+		if (!ctx.Read(m_PlantStateIndex))
+			return false;
+			
+		if (!ctx.Read(m_CurrentPlantMaterialQuantity))
+			return false;
+
+		if (!ctx.Read(m_IsInfested))
+			return false;
+			
+		if (!ctx.Read(m_SprayQuantity))
+			return false;
+		
+		bool loadBool;	// deprec
+		if (!ctx.Read(loadBool))
+			return false;
 		
 		float loadFloat = 0.0;
-		if ( !ctx.Read( loadFloat ) )
-			loadFloat = 0;
-		m_InfestationChance = loadFloat;
-		
-		loadInt = 0;
-		if ( !ctx.Read( loadInt ) )
+		if (!ctx.Read(loadFloat))	// deprec
 			return false;
-		m_GrowthStagesCount = loadInt;
-		
-		loadInt = 0;
-		if ( !ctx.Read( loadInt ) )
-			loadInt = 1;
-		m_CropsCount = loadInt;
-		
-		string loadString = "";
-		if ( !ctx.Read( loadString ) )
-			return false;
-		m_CropsType = loadString;
 		
 		loadFloat = 0.0;
-		if ( !ctx.Read( loadFloat ) )
-			loadFloat = 1;
-		m_PlantMaterialMultiplier = loadFloat;
-		
-		loadInt = 0;
-		if ( !ctx.Read( loadInt ) )
-			loadInt = 1;
-		m_PlantState = loadInt;
-		
-		loadInt = 0;
-		if ( !ctx.Read( loadInt ) )
-			loadInt = 0;
-		m_PlantStateIndex = loadInt;
-		
-		loadFloat = 0.0;
-		if ( !ctx.Read( loadFloat ) )
-			loadFloat = 1;
-		m_CurrentPlantMaterialQuantity = loadFloat;
-		
-		bool loadBool = false;
-		if ( !ctx.Read( loadBool ) )
-			loadBool = false;
-		m_IsInfested = loadBool;
-		 
-		loadFloat = 0.0;
-		if ( !ctx.Read( loadFloat ) )
-			loadFloat = 0;
-		m_SprayQuantity = loadFloat;
-		
-		
-		
-		loadBool = false;
-		if ( ctx.Read( loadBool ) )
+		if (ctx.Read(loadFloat))
 		{
-			if ( loadBool )
-			{}
-		}
-		else
-		{
-			return false;
-		}
-		
-		loadFloat = 0.0;
-		if ( ctx.Read( loadFloat ) )
-		{
-			if ( loadFloat > 0.0 )
-			{}
-		}
-		else
-		{
-			return false;
-		}
-		
-		loadFloat = 0.0;
-		if ( ctx.Read( loadFloat ) )
-		{
-			if ( loadFloat > 0.0 )
+			if (loadFloat > 0.0)
 				m_TimeTracker = loadFloat;	// spoil
 		}
 		else
@@ -342,9 +292,9 @@ class PlantBase extends ItemBase
 		}
 		
 		loadFloat = 0.0;
-		if ( ctx.Read( loadFloat ) )
+		if (ctx.Read(loadFloat))
 		{
-			if ( loadFloat > 0.0 )
+			if (loadFloat > 0.0)
 				m_TimeTracker = loadFloat; // spoil delete
 		}
 		else
@@ -353,7 +303,7 @@ class PlantBase extends ItemBase
 		}
 		
 		loadFloat = 0.0;
-		if ( ctx.Read( loadFloat ) )
+		if (ctx.Read(loadFloat))
 		{
 			if ( loadFloat > 0.0 )
 				m_TimeTracker = loadFloat;	// dry delete
@@ -363,6 +313,17 @@ class PlantBase extends ItemBase
 			return false;
 		}
 		
+		if (m_StateChangeTime != (m_FullMaturityTime / (m_GrowthStagesCount - 2)))
+		{
+			m_StateChangeTime = m_FullMaturityTime / (m_GrowthStagesCount - 2);
+			ErrorEx("[Warning] A plant loaded from storage had a corrupted state change time. Time was now adjusted! Position: " + GetPosition(), ErrorExSeverity.INFO);
+		}
+		
+		if (version >= 142)
+		{
+			if (!ctx.Read(m_HasCrops))
+				return false;
+		}
 
 		UpdatePlant();
 		return true;
@@ -370,37 +331,22 @@ class PlantBase extends ItemBase
 
 	void OnStoreSaveCustom( ParamsWriteContext ctx )
 	{
-		ctx.Write( m_SprayUsage );
-		
-		ctx.Write( m_DeleteDryPlantTime );
-		
-		ctx.Write( m_SpoiledRemoveTime );
-		
-		ctx.Write( m_FullMaturityTime );
-		
-		ctx.Write( m_SpoilAfterFullMaturityTime );
-		
-		ctx.Write( m_StateChangeTime );
-		
-		ctx.Write( m_InfestationChance );
-		
-		ctx.Write( m_GrowthStagesCount );
-		
-		ctx.Write( m_CropsCount );
-		
-		ctx.Write( m_CropsType );
-		
-		ctx.Write( m_PlantMaterialMultiplier );
-		
-		ctx.Write( m_PlantState );
-		
-		ctx.Write( m_PlantStateIndex );
-		
-		ctx.Write( m_CurrentPlantMaterialQuantity );
-		
-		ctx.Write( m_IsInfested );
-		 
-		ctx.Write( m_SprayQuantity );
+		ctx.Write(m_SprayUsage);
+		ctx.Write(m_DeleteDryPlantTime);
+		ctx.Write(m_SpoiledRemoveTime);
+		ctx.Write(m_FullMaturityTime);
+		ctx.Write(m_SpoilAfterFullMaturityTime);
+		ctx.Write(m_StateChangeTime);
+		ctx.Write(m_InfestationChance);
+		ctx.Write(m_GrowthStagesCount);
+		ctx.Write(m_CropsCount);
+		ctx.Write(m_CropsType);
+		ctx.Write(m_PlantMaterialMultiplier);
+		ctx.Write(m_PlantState);
+		ctx.Write(m_PlantStateIndex);
+		ctx.Write(m_CurrentPlantMaterialQuantity);
+		ctx.Write(m_IsInfested);
+		ctx.Write(m_SprayQuantity);
 		
 		bool saveBool = false;	// deprec
 		ctx.Write( saveBool );	
@@ -428,6 +374,8 @@ class PlantBase extends ItemBase
 			saveFloat = m_TimeTracker;
 		}
 		ctx.Write( saveFloat );
+		
+		ctx.Write(m_HasCrops);
 	}
 	
 	void PrintValues()
@@ -435,14 +383,19 @@ class PlantBase extends ItemBase
 		Print("PRINT ALL VALUES OF PLANT...");
 		Print(this);
 		
+		Print(m_GrowthStagesCount);
 		Print(m_HasCrops);
-		Print(m_PlantState);
+		Print(typename.EnumToString(EPlantState, m_PlantState));
 		Print(m_PlantStateIndex);
 		Print(m_CurrentPlantMaterialQuantity);
 		Print(m_IsInfested);
 		Print(m_SprayQuantity);
 		Print(m_Slot);
 		Print(m_GardenBase);
+		Print(m_StateChangeTime);
+		Print(m_FullMaturityTime);
+		Print(m_SpoilAfterFullMaturityTime);
+		Print(m_TimeTracker);
 		Print("----------------------------------------------------------");
 	}
 	
@@ -585,27 +538,6 @@ class PlantBase extends ItemBase
 		}
 	}
 
-	//DEPRECATED
-	string StopInfestation( float consumed_quantity )
-	{
-		m_SprayQuantity += consumed_quantity;
-		
-		if (m_SprayQuantity >= m_SprayUsage)
-		{
-			m_IsInfested = false;
-			m_InfestationChance = 0;
-			
-			ChangeInfestation( false );
-			UpdatePlant();
-			
-			return "I've sprayed the plant a bit. Now it is enough spayed.";
-		}
-		else
-		{
-			return "I've sprayed the plant a bit.";
-		}
-	}
-
 	void RemovePlantEx( vector pos )
 	{
 		if ( GetGame() && GetGame().IsServer() )
@@ -645,8 +577,11 @@ class PlantBase extends ItemBase
 		}
 		
 		m_HasCrops = false;
+
 		SetSynchDirty();
+
 		UpdatePlant();
+		m_GardenBase.SyncSlots();
 	}
 	
 	void SetPlantState(int state)
@@ -721,6 +656,11 @@ class PlantBase extends ItemBase
 	Slot GetSlot()
 	{
 		return m_Slot;
+	}
+	
+	void SetGarden(GardenBase gardenBase)
+	{
+		m_GardenBase = gardenBase;
 	}
 	
 	GardenBase GetGarden()
@@ -810,4 +750,8 @@ class PlantBase extends ItemBase
 	bool IsGrowing();
 	bool NeedsSpraying();
 	void RemovePlant();
+	string StopInfestation( float consumed_quantity )
+	{
+		return "";
+	}
 }

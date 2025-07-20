@@ -310,6 +310,12 @@ class ActionBase : ActionBase_Basic
 		return false;
 	}
 	
+	//! Condition used in PlayerBase::CanChangeStance to check if stance can be changed while action is performed/executed
+	bool CanBePerformedWhileChangingStance()
+	{
+		return true;
+	}
+	
 	bool CanBeSetFromInventory()
 	{
 		return !CanBePerformedFromInventory();
@@ -1024,16 +1030,19 @@ class ActionBase : ActionBase_Basic
 
 	void ClearInventoryReservationEx(ActionData action_data)
 	{
-		if (action_data.m_ReservedInventoryLocations)
+		if (action_data.m_Player.GetInstanceType() != DayZPlayerInstanceType.INSTANCETYPE_SERVER)
 		{
-			InventoryLocation il;
-			for ( int i = 0; i < action_data.m_ReservedInventoryLocations.Count(); i++)
+			if (action_data.m_ReservedInventoryLocations)
 			{
-				il = action_data.m_ReservedInventoryLocations.Get(i);
-				action_data.m_Player.GetInventory().ClearInventoryReservationEx( il.GetItem() , il );
+				InventoryLocation il;
+				for ( int i = 0; i < action_data.m_ReservedInventoryLocations.Count(); i++)
+				{
+					il = action_data.m_ReservedInventoryLocations.Get(i);
+					action_data.m_Player.GetInventory().ClearInventoryReservationEx( il.GetItem() , il );
+				}
+		
+				action_data.m_ReservedInventoryLocations.Clear();
 			}
-
-			action_data.m_ReservedInventoryLocations.Clear();
 		}
 	}
 	
@@ -1054,12 +1063,12 @@ class ActionBase : ActionBase_Basic
 	bool AddActionJuncture(ActionData action_data)
 	{
 		bool accepted = true;
-		if (HasTarget())
+		if (action_data.m_Player.GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_SERVER)
 		{
-			EntityAI targetEntity;
-			if (EntityAI.CastTo(targetEntity,action_data.m_Target.GetObject()))
+			if (HasTarget() && IsLockTargetOnUse() && action_data.m_Target)
 			{
-				if (IsLockTargetOnUse())
+				EntityAI targetEntity;
+				if (EntityAI.CastTo(targetEntity, action_data.m_Target.GetObject()))
 				{
 					InventoryLocation targetIl = new InventoryLocation();
 					targetEntity.GetInventory().GetCurrentInventoryLocation(targetIl);

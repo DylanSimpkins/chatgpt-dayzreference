@@ -2,8 +2,8 @@ class PlayerContainer: CollapsibleContainer
 {
 	protected ref AttachmentsGroupContainer		m_PlayerAttachmentsContainer;
 	protected ref map<int, SlotsIcon>			m_InventorySlots;
-	protected ref map<EntityAI, ref Container>	m_ShowedItems = new ref map<EntityAI, ref Container>;
-	protected ref map<int, ref Container>		m_ShowedItemsIDs = new ref map<int, ref Container>;
+	protected ref map<EntityAI, ref Container>	m_ShowedItems = new map<EntityAI, ref Container>;
+	protected ref map<int, ref Container>		m_ShowedItemsIDs = new map<int, ref Container>;
 	protected PlayerBase						m_Player;
 	
 	protected const	int							HEADER_INDEX_OFFSET = 2;
@@ -33,14 +33,14 @@ class PlayerContainer: CollapsibleContainer
 
 	void PlayerContainer( LayoutHolder parent, int sort = -1 )
 	{
-		m_InventorySlots = new ref map<int, SlotsIcon>;
+		m_InventorySlots = new map<int, SlotsIcon>;
 		m_PlayerAttachmentsContainer = new AttachmentsGroupContainer(this);
 		
 		#ifndef PLATFORM_CONSOLE
 		RightArea rightArea = RightArea.Cast(GetParent());
 		if (rightArea)
 		{
-			rightArea.GetSlotsArea().AddChild(GetHeader().GetRootWidget());
+			rightArea.GetSlotsHeader().AddChild(GetHeader().GetRootWidget());
 			rightArea.GetSlotsArea().AddChild(m_PlayerAttachmentsContainer.GetRootWidget());
 		}
 		#endif
